@@ -1,0 +1,861 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Solar Telemetry API",
+    "version": "1.0.0",
+    "description": "Solar telemetry API. The browser registers solar sites, the simulator posts inverter telemetry, and the automation service reads telemetry incrementally."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "Site": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "inverterId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "pvPeakPowerW": {
+            "type": "number"
+          },
+          "inverterAcPowerW": {
+            "type": "number"
+          },
+          "timezone": {
+            "type": "string",
+            "enum": ["Asia/Jakarta"]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "protected": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "inverterId",
+          "name",
+          "location",
+          "pvPeakPowerW",
+          "inverterAcPowerW",
+          "timezone",
+          "enabled",
+          "protected",
+          "createdAt",
+          "updatedAt"
+        ],
+        "description": "A registered solar site as persisted by the backend.",
+        "example": {
+          "id": "site-cikarang-a",
+          "inverterId": "inv-cikarang-a",
+          "name": "Cikarang Rooftop A",
+          "location": "Cikarang, West Java",
+          "pvPeakPowerW": 100000,
+          "inverterAcPowerW": 80000,
+          "timezone": "Asia/Jakarta",
+          "enabled": true,
+          "protected": true,
+          "createdAt": "2026-08-25T00:00:00.000Z",
+          "updatedAt": "2026-08-25T00:00:00.000Z"
+        }
+      },
+      "TelemetryReading": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "siteId": {
+            "type": "string"
+          },
+          "inverterId": {
+            "type": "string"
+          },
+          "observedAt": {
+            "type": "string"
+          },
+          "receivedAt": {
+            "type": "string"
+          },
+          "acPowerW": {
+            "type": "number"
+          },
+          "acVoltageV": {
+            "type": "number"
+          },
+          "frequencyHz": {
+            "type": "number"
+          },
+          "energyTodayWh": {
+            "type": "number"
+          },
+          "energyTotalWh": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["night", "starting", "running", "warning", "offline"]
+          },
+          "errorCode": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": [
+          "id",
+          "siteId",
+          "inverterId",
+          "observedAt",
+          "receivedAt",
+          "acPowerW",
+          "acVoltageV",
+          "frequencyHz",
+          "energyTodayWh",
+          "energyTotalWh",
+          "status",
+          "errorCode"
+        ],
+        "description": "A persisted 5-minute telemetry reading.",
+        "example": {
+          "id": 1,
+          "siteId": "site-cikarang-a",
+          "inverterId": "inv-cikarang-a",
+          "observedAt": "2026-08-25T05:00:00+07:00",
+          "receivedAt": "2026-08-25T05:00:01.000Z",
+          "acPowerW": 85000,
+          "acVoltageV": 225,
+          "frequencyHz": 50,
+          "energyTodayWh": 1200000,
+          "energyTotalWh": 1200000000,
+          "status": "running",
+          "errorCode": null
+        }
+      },
+      "SiteList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Site"
+        }
+      },
+      "TelemetryReadingList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/TelemetryReading"
+        }
+      },
+      "SiteCreate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "location": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 150
+          },
+          "pvPeakPowerW": {
+            "type": "integer",
+            "minimum": 500,
+            "maximum": 1000000
+          },
+          "inverterAcPowerW": {
+            "type": "integer",
+            "minimum": 500,
+            "maximum": 1000000
+          },
+          "timezone": {
+            "type": "string",
+            "enum": ["Asia/Jakarta"],
+            "default": "Asia/Jakarta"
+          }
+        },
+        "required": ["name", "location", "pvPeakPowerW", "inverterAcPowerW"],
+        "description": "Details required to register a new solar site.",
+        "example": {
+          "name": "Warehouse Rooftop",
+          "location": "Bekasi, West Java",
+          "pvPeakPowerW": 100000,
+          "inverterAcPowerW": 80000,
+          "timezone": "Asia/Jakarta"
+        }
+      },
+      "SiteUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "location": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 150
+          },
+          "pvPeakPowerW": {
+            "type": "integer",
+            "minimum": 500,
+            "maximum": 1000000
+          },
+          "inverterAcPowerW": {
+            "type": "integer",
+            "minimum": 500,
+            "maximum": 1000000
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "description": "Partial site update. Only fields present in the payload are applied.",
+        "example": {
+          "name": "Warehouse Rooftop (expanded)",
+          "inverterAcPowerW": 100000
+        }
+      },
+      "TelemetryIngest": {
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "type": "string",
+            "enum": ["1.0"]
+          },
+          "source": {
+            "type": "string",
+            "enum": ["telemetry-simulator"]
+          },
+          "siteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "inverterId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["night", "starting", "running", "warning", "offline"]
+          },
+          "errorCode": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "metrics": {
+            "type": "object",
+            "properties": {
+              "acPowerW": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000000
+              },
+              "acVoltageV": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 300
+              },
+              "frequencyHz": {
+                "type": "number",
+                "minimum": 45,
+                "maximum": 55
+              },
+              "energyTodayWh": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100000000
+              },
+              "energyTotalWh": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 10000000000
+              }
+            },
+            "required": [
+              "acPowerW",
+              "acVoltageV",
+              "frequencyHz",
+              "energyTodayWh",
+              "energyTotalWh"
+            ]
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "source",
+          "siteId",
+          "inverterId",
+          "observedAt",
+          "status",
+          "metrics"
+        ],
+        "description": "A single 5-minute inverter reading pushed by the simulator.",
+        "example": {
+          "schemaVersion": "1.0",
+          "source": "telemetry-simulator",
+          "siteId": "site-cikarang-a",
+          "inverterId": "inv-cikarang-a",
+          "observedAt": "2026-08-25T14:05:00+07:00",
+          "status": "running",
+          "errorCode": null,
+          "metrics": {
+            "acPowerW": 85000,
+            "acVoltageV": 225,
+            "frequencyHz": 50,
+            "energyTodayWh": 1200000,
+            "energyTotalWh": 1200000000
+          }
+        }
+      },
+      "SiteTelemetryQuery": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "default": 288
+          },
+          "latest": {
+            "type": "string",
+            "enum": ["true", "false"]
+          }
+        },
+        "description": "Query parameters for the site-scoped telemetry feed.",
+        "example": {
+          "limit": 288,
+          "latest": "false"
+        }
+      },
+      "TelemetryPageQuery": {
+        "type": "object",
+        "properties": {
+          "afterId": {
+            "type": ["integer", "null"],
+            "minimum": 0,
+            "default": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "default": 500
+          }
+        },
+        "description": "Cursor page over the global telemetry feed, ordered by ascending row id.",
+        "example": {
+          "afterId": 0,
+          "limit": 500
+        }
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Liveness check",
+        "tags": ["health"],
+        "responses": {
+          "200": {
+            "description": "The service is healthy."
+          }
+        }
+      }
+    },
+    "/api/v1/sites": {
+      "get": {
+        "summary": "List solar sites",
+        "tags": ["sites"],
+        "responses": {
+          "200": {
+            "description": "Every registered site.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "statusCode": {
+                      "type": "number"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SiteList"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "statusCode", "data", "message"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Register a solar site",
+        "tags": ["sites"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The newly created site.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "statusCode": {
+                      "type": "number"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Site"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "statusCode", "data", "message"]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Payload failed schema validation."
+          }
+        }
+      }
+    },
+    "/api/v1/sites/{siteId}": {
+      "get": {
+        "summary": "Get a site by id",
+        "tags": ["sites"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "siteId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The requested site.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "statusCode": {
+                      "type": "number"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Site"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "statusCode", "data", "message"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No site has the given id."
+          }
+        }
+      },
+      "put": {
+        "summary": "Replace a site (full update)",
+        "tags": ["sites"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "siteId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated site.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "statusCode": {
+                      "type": "number"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Site"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "statusCode", "data", "message"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No site has the given id."
+          },
+          "422": {
+            "description": "Payload failed schema validation."
+          }
+        }
+      },
+      "patch": {
+        "summary": "Partially update a site",
+        "tags": ["sites"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "siteId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated site.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "statusCode": {
+                      "type": "number"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Site"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "statusCode", "data", "message"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No site has the given id."
+          },
+          "422": {
+            "description": "Payload failed schema validation."
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a site",
+        "tags": ["sites"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "siteId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The site was deleted."
+          },
+          "404": {
+            "description": "No site has the given id."
+          },
+          "409": {
+            "description": "Protected demo sites may not be deleted."
+          }
+        }
+      }
+    },
+    "/api/v1/sites/{siteId}/telemetry": {
+      "get": {
+        "summary": "Site-scoped telemetry feed",
+        "tags": ["telemetry"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "siteId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 288
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "required": false,
+            "name": "latest",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The most recent reading (a single object or null) when `latest=true`; otherwise the recent history as an array, newest last.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "statusCode": {
+                      "type": "number"
+                    },
+                    "data": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/TelemetryReading"
+                        },
+                        {
+                          "$ref": "#/components/schemas/TelemetryReadingList"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "statusCode", "data", "message"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No site has the given id."
+          }
+        }
+      }
+    },
+    "/api/v1/telemetry": {
+      "post": {
+        "summary": "Ingest a telemetry reading",
+        "tags": ["telemetry"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelemetryIngest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The reading already existed and was unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "statusCode": {
+                      "type": "number"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/TelemetryReading"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "statusCode", "data", "message"]
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "The reading was stored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "statusCode": {
+                      "type": "number"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/TelemetryReading"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "statusCode", "data", "message"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "AC power exceeds the site's inverter capacity."
+          },
+          "404": {
+            "description": "The referenced site does not exist."
+          },
+          "409": {
+            "description": "The referenced site is disabled."
+          },
+          "422": {
+            "description": "Payload failed schema validation."
+          }
+        }
+      },
+      "get": {
+        "summary": "Cursor page over the global telemetry feed",
+        "tags": ["telemetry"],
+        "parameters": [
+          {
+            "schema": {
+              "type": ["integer", "null"],
+              "minimum": 0,
+              "default": 0
+            },
+            "required": false,
+            "name": "afterId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 500
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of readings ordered by ascending row id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "statusCode": {
+                      "type": "number"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/TelemetryReadingList"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "statusCode", "data", "message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

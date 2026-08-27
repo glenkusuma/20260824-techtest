@@ -1,0 +1,13 @@
+# Rootless cron (supercronic) for the automation service. The container runs as
+# UID 1000 and the schedule is interpreted in the container's TZ (Asia/Jakarta via
+# the TZ env + tzdata). Configuration is inherited from the container environment.
+#
+# CRON_TZ is retained purely for cronie compatibility: a vanilla cronie host can
+# run this same file under its own CRON_TZ directive. supercronic parses it as a
+# harmless env-var line and IGNORES it for scheduling (it schedules on the
+# container's TZ), so keeping it costs nothing and keeps the file portable.
+CRON_TZ=Asia/Jakarta
+0 8 * * * cd /app && node services/automation/dist/collect.js >> /var/log/cron.log 2>&1
+0 12 * * * cd /app && node services/automation/dist/collect.js >> /var/log/cron.log 2>&1
+0 15 * * * cd /app && node services/automation/dist/collect.js >> /var/log/cron.log 2>&1
+15 0 * * * cd /app && bash services/automation/scripts/cleanup.sh >> /var/log/cron.log 2>&1

@@ -1,0 +1,8 @@
+# Compose override for the Docker-path >30 day cron + cleanup integration test
+# (scripts/docker-cleanup-test.mjs).
+#
+# Runs on a dedicated project so the test never collides with a dev/compose stack.
+# The backend's host port (:3000) is left as declared in compose.yaml; the test
+# refuses to start if a stale service is already holding it (same guard as
+# scripts/compose-demo.mjs), so it never silently targets a foreign backend.
+name: technical-test-cleanup

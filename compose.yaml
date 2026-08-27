@@ -1,0 +1,71 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Containerfile
+      target: backend
+    environment:
+      NODE_ENV: production
+      DB_TIER: prod
+      PORT: 3000
+      DATABASE_PATH: /data/application.db
+      CORS_ORIGIN: http://localhost:5173
+      RATE_LIMIT_MAX: 10000
+    ports:
+      - "3000:3000"
+    volumes:
+      # Host bind mount so the rootless backend (UID 1000) can write its SQLite
+      # DB without a root-run chown: named volumes start root-owned, which UID 1000
+      # cannot write. Pre-created owned by the host user (see compose script).
+      - ./.runtime/backend:/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Containerfile
+      target: frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+  telemetry-simulator:
+    build:
+      context: .
+      dockerfile: Containerfile
+      target: telemetry-simulator
+    environment:
+      BACKEND_URL: http://backend:3000
+      SIMULATOR_CADENCE_MS: 300000
+    depends_on:
+      - backend
+
+  automation:
+    build:
+      context: .
+      dockerfile: Containerfile
+      target: automation
+    environment:
+      BACKEND_URL: http://backend:3000
+      COLLECTOR_DATABASE_PATH: /data/collector.db
+      ARTIFACT_DIR: /home/cron
+      COLLECTION_SOURCE_NAME: backend-telemetry
+      TZ: Asia/Jakarta
+    depends_on:
+      - backend
+    volumes:
+      # Host bind mounts so the rootless container (UID 1000) can write without a
+      # root-run chown step: named volumes start root-owned, which UID 1000 cannot.
+      - ./.runtime/automation:/data
+      - ./.runtime/cron:/home/cron
