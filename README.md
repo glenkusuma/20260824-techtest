@@ -10,7 +10,7 @@ Implementasi full-stack untuk technical test yang menggabungkan form frontend, E
 ## Quick Start
 
 ```bash
-git clone https://github.com/glenkusuma/https://github.com/glenkusuma/20260824-techtest.git
+git clone https://github.com/glenkusuma/20260824-techtest.git
 cd 20260824-techtest
 
 nvm install 22
